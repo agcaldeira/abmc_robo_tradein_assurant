@@ -44,10 +44,10 @@ public class ServiceClass {
 			for (String arquivo : arquivos) {
 				chave = arquivo.replace("NFE", "").replace(".pdf", "").replace(".xml", "").replace("-nfe", "");
 				
-				sql = "select replace(replace(extract(xmltype(doc), '/NFe/infNFe/ide/nNF', 'xmlns=\"http://www.portalfiscal.inf.br/nfe\"').getStringVal(),'<nNF xmlns=\"http://www.portalfiscal.inf.br/nfe\">',''),'</nNF>','') nnf,";
-				sql = sql + " replace(replace(extract(xmltype(doc), '/NFe/infNFe/ide/natOp', 'xmlns=\"http://www.portalfiscal.inf.br/nfe\"').getStringVal(),'<natOp xmlns=\"http://www.portalfiscal.inf.br/nfe\">',''),'</natOp>','') natop,";
-				sql = sql + " replace(replace(extract(xmltype(doc), '/NFe/infNFe/ide/serie', 'xmlns=\"http://www.portalfiscal.inf.br/nfe\"').getStringVal(),'<serie xmlns=\"http://www.portalfiscal.inf.br/nfe\">',''),'</serie>','') serie,";
-				sql = sql + " replace(replace(extract(xmltype(doc), '/NFe/infNFe/compra/xPed', 'xmlns=\"http://www.portalfiscal.inf.br/nfe\"').getStringVal(),'<xPed xmlns=\"http://www.portalfiscal.inf.br/nfe\">',''),'</xPed>','') xped";
+				sql = "select XMLSerialize(CONTENT XMLQuery('declare default element namespace \"http://www.portalfiscal.inf.br/nfe\"; /NFe/infNFe/ide/nNF/text()' PASSING XMLTYPE(doc) RETURNING CONTENT) AS VARCHAR2(100)) AS nnf,";
+				sql = sql + " XMLSerialize(CONTENT XMLQuery('declare default element namespace \"http://www.portalfiscal.inf.br/nfe\"; /NFe/infNFe/ide/natOp/text()' PASSING XMLTYPE(doc) RETURNING CONTENT) AS VARCHAR2(100)) AS natop,";
+				sql = sql + " XMLSerialize(CONTENT XMLQuery('declare default element namespace \"http://www.portalfiscal.inf.br/nfe\"; /NFe/infNFe/ide/serie/text()' PASSING XMLTYPE(doc) RETURNING CONTENT) AS VARCHAR2(100)) AS serie,";
+				sql = sql + " XMLSerialize(CONTENT XMLQuery('declare default element namespace \"http://www.portalfiscal.inf.br/nfe\"; /NFe/infNFe/compra/xPed/text()' PASSING XMLTYPE(doc) RETURNING CONTENT) AS VARCHAR2(100)) AS xped";
 				sql = sql + " from DFE_LOB";
 				sql = sql + " WHERE ID = (select max(dfe_lob_id) from dfe_historico_nfe t WHERE STATUS_DESCRICAO LIKE 'Remontando e Assinando %'";
 				sql = sql + " and NFE_ID = (SELECT id FROM DFE_NFE WHERE chave_acesso = '" + chave + "' AND CNPJ_EMISSOR = '22725405000200'))";
@@ -57,28 +57,27 @@ public class ServiceClass {
 				arquivoProcessado = config.getDiretorioProcessadas() +"\\\\"+ arquivo;
 				
 				if (!res.isBeforeFirst()) {
+					System.out.println("Nao encontrou o registro para a chave: " + chave);
 					copiarArquivo(arquivoOrigem, arquivoErro, true);
 				}
 				
 				while (res.next()) {
-					
 					nnf = res.getString("nnf");
 					natop = res.getString("natop");
 					serie = res.getString("serie");
 					xped = res.getString("xped");
 					nomeArquivo = xped + "_" + nnf;
+					System.out.println("nnf: " + nnf);
+					System.out.println("natop: " + natop);
+					System.out.println("serie: " + serie);
+					System.out.println("xped: " + xped);
+					System.out.println("Analisando o registro: " + nomeArquivo);
 					String extencao = arquivo.substring(arquivo.length()-4);
 					arquivoDestinoExtra = config.getDiretorioEscritaExtra() +"\\\\"+ nomeArquivo + extencao;
 					arquivoDestinoYesfurbe = config.getDiretorioEscritaYesfurbe() +"\\\\"+ nomeArquivo + extencao;
 					arquivoDestinoRanfe = config.getDiretorioEscritaRanfe() +"\\\\"+ nomeArquivo + extencao;
 					
-					// Processo Extra
-					/*
-					if (xped == "" || xped == null || (!xped.contains("EXT") && !xped.contains("YB"))) {
-						copiarArquivo(arquivoOrigem, arquivoErro, true);
-					}
-					*/
-					if (xped == "" || xped == null || (!xped.startsWith("EXT") && !xped.startsWith("YB"))) {
+					if (xped == "" || xped == null || (!xped.startsWith("EXT") && !xped.startsWith("YB")  && !xped.startsWith("SAN"))) {
 						copiarArquivo(arquivoOrigem, arquivoErro, true);
 					}
 					
@@ -114,14 +113,19 @@ public class ServiceClass {
 						}
 						// Processo Samsung
 						if (xped.startsWith("SAN")) {
+							System.out.println("IF 1 do processo SAN");
 							if (serie.equals("4") && natop.equals("Compra de End-User - Trade_IN")) {
-								//copiarArquivo(arquivoOrigem, arquivoDestinoYesfurbe, false);
+								System.out.println("IF 2 do processo SAN");
 								if (arquivoOrigem.contains(".xml")) {
 									copiarArquivo(arquivoOrigem, arquivoDestinoRanfe, false);
 								}
+								System.out.println("IF SAN - Copiando arquivo para processado - Inicio");
 								copiarArquivo(arquivoOrigem, arquivoProcessado, true);
+								System.out.println("IF SAN - Copiando arquivo para processado - Fim");
 							} else {
+								System.out.println("IF SAN Erro - Copiando arquivo para processado - Inicio");
 								copiarArquivo(arquivoOrigem, arquivoErro, true);
+								System.out.println("IF SAN Erro - Copiando arquivo para processado - Fim");
 							}
 						}
 					}
@@ -134,7 +138,9 @@ public class ServiceClass {
 	}
 	
 	public void copiarArquivo(String origem, String destino, boolean apagaOrigem) {
-
+		
+		System.out.println("Copiando arquivo - Inicio - Origem: "+origem+" - Destino: "+destino);
+		System.out.println("Apaga Origem: "+apagaOrigem);
         try {
         	
         	File file = new File(destino);
@@ -149,18 +155,23 @@ public class ServiceClass {
             while ((len = in.read(buf)) > 0) {
                 out.write(buf, 0, len);
             }
-            
+            System.out.println("Copiando arquivo - Fim - Origem: "+origem+" - Destino: "+destino);
             out.close();
             in.close();
+            Thread.sleep(200);
             if (apagaOrigem) {
+            	System.out.println("Apagando origem - Inicio: "+origem);
 	            Path path = Paths.get(origem);
 	            InputStream fileStream = Files.newInputStream(path, StandardOpenOption.DELETE_ON_CLOSE);
 	            fileStream.close();
+	            System.out.println("Apagando origem - Fim: "+origem);
             }
             
         } catch (IOException e) {
             System.out.println(e.toString());;
-        }
+        } catch (InterruptedException e) {
+			e.printStackTrace();
+		}
     }
 
 	public ArrayList<String> lerArquivos() {
