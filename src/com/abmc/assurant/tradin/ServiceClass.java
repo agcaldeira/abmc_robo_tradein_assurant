@@ -238,13 +238,9 @@ public class ServiceClass {
 					cf.setDbUser(linha.replace("server.db.user=", ""));
 				}
 
-				if (linha.startsWith("server.db.user")) {
-					cf.setDbUser(linha.replace("server.db.user=", ""));
-				}
-
 				if (linha.startsWith("server.db.password")) {
 					cf.setDbPassword(linha.replace("server.db.password=", ""));
-				}
+				}				
 			}
 
 		} catch (IOException e) {
