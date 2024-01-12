@@ -139,12 +139,12 @@ public class InterfaceOracleService {
 					cf.setDbInstanceName(linha.replace("server.db.instance=", ""));
 				}
 
-				if (linha.startsWith("server.db.userRA")) {
-					cf.setDbUser(linha.replace("server.db.userRA=", ""));
+				if (linha.startsWith("server.db.ra.user")) {
+					cf.setDbUser(linha.replace("server.db.ra.user=", ""));
 				}
 
-				if (linha.startsWith("server.db.passwordRA")) {
-					cf.setDbPassword(linha.replace("server.db.passwordRA=", ""));
+				if (linha.startsWith("server.db.ra.password")) {
+					cf.setDbPassword(linha.replace("server.db.ra.password=", ""));
 				}
 			}
 
