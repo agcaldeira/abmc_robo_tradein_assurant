@@ -20,6 +20,10 @@ import java.util.Scanner;
 public class ServiceClass {
 	
 	private ConfigFileClass config;
+	
+	private final String YESFURB = "YBV";
+	private final String EXTRA = "EXT";
+	private final String SAMSUNG = "SAMV";
 
 	public void processar(ArrayList<String> arquivos) {
 		config = lerArquivoConfiguracao();
@@ -57,7 +61,6 @@ public class ServiceClass {
 				arquivoProcessado = config.getDiretorioProcessadas() +"\\\\"+ arquivo;
 				
 				if (!res.isBeforeFirst()) {
-					System.out.println("Nao encontrou o registro para a chave: " + chave);
 					copiarArquivo(arquivoOrigem, arquivoErro, true);
 				}
 				
@@ -67,23 +70,18 @@ public class ServiceClass {
 					serie = res.getString("serie");
 					xped = res.getString("xped");
 					nomeArquivo = xped + "_" + nnf;
-					System.out.println("nnf: " + nnf);
-					System.out.println("natop: " + natop);
-					System.out.println("serie: " + serie);
-					System.out.println("xped: " + xped);
-					System.out.println("Analisando o registro: " + nomeArquivo);
 					String extencao = arquivo.substring(arquivo.length()-4);
 					arquivoDestinoExtra = config.getDiretorioEscritaExtra() +"\\\\"+ nomeArquivo + extencao;
 					arquivoDestinoYesfurbe = config.getDiretorioEscritaYesfurbe() +"\\\\"+ nomeArquivo + extencao;
 					arquivoDestinoRanfe = config.getDiretorioEscritaRanfe() +"\\\\"+ nomeArquivo + extencao;
 					
-					if (xped == "" || xped == null || (!xped.startsWith("EXT") && !xped.startsWith("YB")  && !xped.startsWith("SAN"))) {
+					if (xped == "" || xped == null || (!xped.startsWith(EXTRA) && !xped.startsWith(YESFURB)  && !xped.startsWith(SAMSUNG))) {
 						copiarArquivo(arquivoOrigem, arquivoErro, true);
 					}
 					
 					if (xped != null) {
 						// Processo Extra
-						if (xped.startsWith("EXT")) {
+						if (xped.startsWith(EXTRA)) {
 							if (arquivoOrigem.contains(".xml")) {
 								copiarArquivo(arquivoOrigem, arquivoDestinoYesfurbe, false);
 								copiarArquivo(arquivoOrigem, arquivoDestinoRanfe, false);
@@ -100,7 +98,7 @@ public class ServiceClass {
 						}
 						
 						// Processo Yesfurbe
-						if (xped.startsWith("YB")) {
+						if (xped.startsWith(YESFURB)) {
 							if (serie.equals("4") && natop.equals("Compra de End-User - Trade_IN")) {
 								copiarArquivo(arquivoOrigem, arquivoDestinoYesfurbe, false);
 								if (arquivoOrigem.contains(".xml")) {
@@ -112,20 +110,14 @@ public class ServiceClass {
 							}
 						}
 						// Processo Samsung
-						if (xped.startsWith("SAN")) {
-							System.out.println("IF 1 do processo SAN");
+						if (xped.startsWith(SAMSUNG)) {
 							if (serie.equals("4") && natop.equals("Compra de End-User - Trade_IN")) {
-								System.out.println("IF 2 do processo SAN");
 								if (arquivoOrigem.contains(".xml")) {
 									copiarArquivo(arquivoOrigem, arquivoDestinoRanfe, false);
 								}
-								System.out.println("IF SAN - Copiando arquivo para processado - Inicio");
 								copiarArquivo(arquivoOrigem, arquivoProcessado, true);
-								System.out.println("IF SAN - Copiando arquivo para processado - Fim");
 							} else {
-								System.out.println("IF SAN Erro - Copiando arquivo para processado - Inicio");
 								copiarArquivo(arquivoOrigem, arquivoErro, true);
-								System.out.println("IF SAN Erro - Copiando arquivo para processado - Fim");
 							}
 						}
 					}
@@ -139,8 +131,6 @@ public class ServiceClass {
 	
 	public void copiarArquivo(String origem, String destino, boolean apagaOrigem) {
 		
-		System.out.println("Copiando arquivo - Inicio - Origem: "+origem+" - Destino: "+destino);
-		System.out.println("Apaga Origem: "+apagaOrigem);
         try {
         	
         	File file = new File(destino);
@@ -155,16 +145,13 @@ public class ServiceClass {
             while ((len = in.read(buf)) > 0) {
                 out.write(buf, 0, len);
             }
-            System.out.println("Copiando arquivo - Fim - Origem: "+origem+" - Destino: "+destino);
             out.close();
             in.close();
             Thread.sleep(200);
             if (apagaOrigem) {
-            	System.out.println("Apagando origem - Inicio: "+origem);
 	            Path path = Paths.get(origem);
 	            InputStream fileStream = Files.newInputStream(path, StandardOpenOption.DELETE_ON_CLOSE);
 	            fileStream.close();
-	            System.out.println("Apagando origem - Fim: "+origem);
             }
             
         } catch (IOException e) {
